@@ -1,4 +1,4 @@
-# xlsx表格处理项目
+# Geologic Age Calculation
 
 本项目用于对xlsx表格文件进行自动化处理和数据分析，支持批量读取、修改、导出等功能。
 
@@ -18,7 +18,7 @@
 ## 项目结构
 
 ```
-xlsx表格处理项目/
+Geologic Age Calculation/
 ├── README.md           # 项目说明文档
 ├── main.py            # Python版本主程序
 ├── main.R             # R语言版本主程序
