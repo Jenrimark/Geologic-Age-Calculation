@@ -167,7 +167,7 @@ process_age_data <- function(age, df, version, iugs_col, show_cols) {
         cat(sprintf("精确数值匹配: %s %s\n", paste(info, collapse = " "), iugs_value))
         
         result_df <- df[lower_idx_original, show_cols, drop = FALSE]
-        result_df[[version]] <- age_num
+        result_df[[version]] <- as.character(age_num)
         return(result_df)
       } else {
         cat(sprintf('无法找到合适的上下界进行插值，输入值 %s 可能超出 %s 列的数值范围。\n', age_num, version))
@@ -292,7 +292,7 @@ process_age_data <- function(age, df, version, iugs_col, show_cols) {
       
       # 创建结果DataFrame
       result_df <- df[as.numeric(closest_row_idx), show_cols, drop = FALSE]
-      result_df[[version]] <- age_num
+      result_df[[version]] <- as.character(age_num)
       
       # 显示信息
       labels <- c("宇", "界", "系", "统", "阶")
@@ -359,8 +359,8 @@ process_age_data <- function(age, df, version, iugs_col, show_cols) {
     
     upper_idx_original <- which(valid_iugs_idx)[which(rownames(df_iugs_filtered) == rownames(upper_row_for_table))[1]]
     result_df <- df[upper_idx_original, show_cols, drop = FALSE]
-    result_df[[version]] <- age_num
-    result_df[[iugs_col]] <- interp_value
+    result_df[[version]] <- as.character(age_num)
+    result_df[[iugs_col]] <- as.character(interp_value)
     
     labels <- c("宇", "界", "系", "统", "阶")
     info_row <- df[upper_idx_original, ]
