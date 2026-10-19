@@ -42,6 +42,7 @@
 Geologic-Age-Calculation/
 ├── 各版本直接转换_无中介.R      # 命令行版核心：双模式，任意两版本一步直达
 ├── 年代表转换_API服务.R         # 一体化 R 服务：托管网页 + API，复用上方转换核心
+├── start-web.bat               # Windows 一键：定位R/装依赖/启动并自动开浏览器（全英文）
 ├── web/                        # 答辩演示网页（由 R 同源托管，纯前端静态文件）
 │   ├── index.html              # 单屏三栏页面结构
 │   ├── style.css               # 样式，无外部依赖
@@ -128,6 +129,8 @@ install.packages(c("readxl", "dplyr", "writexl", "tibble", "httpuv", "jsonlite")
 Rscript 年代表转换_API服务.R
 # 显式指定数据：Rscript 年代表转换_API服务.R --xlsx=docs/地质年代表.xlsx
 ```
+
+**Windows 一键启动**：双击根目录 `start-web.bat`，自动定位 R、按需安装依赖（清华镜像）并启动服务、打开浏览器；关闭窗口即停止。
 
 行为：
 
