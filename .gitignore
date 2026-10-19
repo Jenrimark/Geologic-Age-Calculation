@@ -5,3 +5,10 @@ __pycache__/
 .env
 .DS_Store
 .venv/
+
+# R 临时与工作区文件
+.Rhistory
+.Rapp.history
+.RData
+.Rprof
+*.Rproj.user/
