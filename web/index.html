@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>不同版本地质年代自动对齐模型</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 顶栏 -->
+<header class="topbar">
+  <div class="brand"><span class="dot"></span><h1>不同版本地质年代自动对齐模型</h1></div>
+  <div id="apiStatus" class="status unknown" title="R 后端连接状态">检测中…</div>
+</header>
+
+<!-- 成果数字条（通栏） -->
+<section class="stats">
+  <div class="stat"><div class="num" id="stVersions">87</div><div class="lab">年代表版本</div></div>
+  <div class="stat"><div class="num" id="stUnits">118</div><div class="lab">地层单元</div></div>
+  <div class="stat"><div class="num">5</div><div class="lab">级层级 · 宇/界/系/统/阶</div></div>
+  <div class="stat"><div class="num">1917–2026</div><div class="lab">覆盖年份跨度</div></div>
+  <div class="stat"><div class="num">1 步</div><div class="lab">源版本直达目标版本 · 至多一次插值</div></div>
+</section>
+
+<!-- 主体三栏，单屏不翻页 -->
+<main class="board">
+
+  <!-- 左栏：选择与输入 -->
+  <section class="panel control">
+    <h2 class="panel-title"><span class="step">1</span>选择版本并输入年龄</h2>
+
+    <div class="field">
+      <label class="vlabel">源版本（输入年龄所在版本）</label>
+      <select id="srcSel"></select>
+      <div class="vmeta" id="srcMeta"></div>
+    </div>
+
+    <button id="swapBtn" class="swap" title="交换源与目标">⇄</button>
+
+    <div class="field">
+      <label class="vlabel">目标版本（转换结果版本）</label>
+      <select id="dstSel"></select>
+      <div class="vmeta" id="dstMeta"></div>
+    </div>
+
+    <div class="field">
+      <label class="vlabel">输入年龄（Ma，多个用逗号分隔）</label>
+      <div class="input-row">
+        <input type="text" id="ageInput" placeholder="如 2.59, 2.2" />
+        <button id="goBtn" class="primary">转换</button>
+      </div>
+    </div>
+    <p class="hint">精确匹配优先；未命中取上下相邻控制点分段线性插值；超出控制点范围不外推。</p>
+  </section>
+
+  <!-- 中栏：结果与算法 -->
+  <section class="panel result">
+    <h2 class="panel-title"><span class="step">2</span>转换结果</h2>
+
+    <div class="direct">
+      <span class="node src" id="flowSrc">—</span>
+      <span class="arrow">━━▶</span>
+      <span class="node dst" id="flowDst">—</span>
+      <span class="direct-note" id="flowMethod">一步直达 · 至多一次插值</span>
+    </div>
+
+    <table class="result-table">
+      <thead><tr><th>输入 Ma</th><th>输出 Ma</th><th>方式</th><th>所属地层单元</th></tr></thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+
+    <div class="axis-box" id="axisBox">
+      <div class="axis-title">插值过程（仅插值时显示）</div>
+      <svg id="axisSvg" viewBox="0 0 720 170" width="100%"></svg>
+    </div>
+  </section>
+
+  <!-- 右栏：数据可视化 -->
+  <section class="panel chart">
+    <h2 class="panel-title"><span class="step">3</span>87 版本覆盖度演进</h2>
+    <p class="chart-sub">按版本年代顺序（1917→2026），柱高 = 该版本划分的地层单元数 / 118</p>
+    <svg id="coverSvg" viewBox="0 0 360 300" width="100%"></svg>
+    <div class="legend">
+      <span><i class="sw full"></i>覆盖 ≥90 单元</span>
+      <span><i class="sw mid"></i>覆盖 40–89</span>
+      <span><i class="sw low"></i>覆盖 &lt;40</span>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">转换由 R 服务完成（精确匹配 + 分段线性插值，只读不写文件）；关闭浏览器标签页即自动停止服务。</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -27,6 +27,8 @@ find_geology_xlsx <- function() {
   candidates <- c(
     get_arg("xlsx"),
     Sys.getenv("GEO_XLSX", unset = ""),
+    file.path(dir, "docs", "地质年代表.xlsx"),
+    file.path(dir, "地质年代表.xlsx"),
     file.path(dir, "地质年代表（表头）.xlsx"),
     file.path(dir, "wjy.xlsx"),
     file.path(path.expand("~"), "Desktop", "WJY2", "地质年代表（表头）.xlsx"),

@@ -56,6 +56,8 @@ resolve_xlsx <- function() {
   candidates <- c(
     get_arg("xlsx"),
     Sys.getenv("GEO_XLSX", unset = ""),
+    file.path(SCRIPT_DIR, "docs", "地质年代表.xlsx"),
+    file.path(SCRIPT_DIR, "地质年代表.xlsx"),
     file.path(SCRIPT_DIR, "地质年代表（表头）.xlsx"),
     file.path(SCRIPT_DIR, "wjy.xlsx"),
     file.path(path.expand("~"), "Desktop", "WJY2", "地质年代表（表头）.xlsx"),
@@ -232,12 +234,30 @@ do_convert <- function(params) {
       failed <- c(failed, list(list(input = a,
         reason = sprintf("无法在 %s 中定位（超出控制点范围或无相邻可用值）", src))))
     } else {
-      results <- c(results, list(list(
+      # 插值时补充上下控制点坐标，仅供前端绘制插值数轴（不改转换算法）
+      extra <- NULL
+      if (!isTRUE(r$exact)) {
+        sx <- suppressWarnings(as.numeric(as.character(DF[[src]])))
+        tx <- suppressWarnings(as.numeric(as.character(DF[[dst]])))
+        ok <- !is.na(sx) & !is.na(tx)
+        lx <- sx[ok]; ly <- tx[ok]
+        li <- which(lx <= a); ui <- which(lx >= a)
+        if (length(li) && length(ui)) {
+          li <- li[which.max(lx[li])]; ui <- ui[which.min(lx[ui])]
+          extra <- list(
+            lower = list(x = round(lx[li], 4), y = round(ly[li], 4)),
+            upper = list(x = round(lx[ui], 4), y = round(ly[ui], 4))
+          )
+        }
+      }
+      row <- list(
         input  = r$source,
         output = round(r$target, 4),
         method = if (isTRUE(r$exact)) "精确匹配" else "插值",
         stage  = stage_of(a, src)
-      )))
+      )
+      if (!is.null(extra)) row$lower <- extra$lower; if (!is.null(extra)) row$upper <- extra$upper
+      results <- c(results, list(row))
     }
   }
   json_resp(list(
@@ -265,6 +285,38 @@ route <- function(req) {
       "Access-Control-Max-Age"       = "86400"
     ), body = ""))
   }
+  # ── 关闭服务：浏览器关闭/退出时调用，停止接口并清理退出 ──
+  if (path == "/shutdown") {
+    resp <- json_resp(list(ok = TRUE, message = "服务已关闭，正在退出"))
+    tryCatch(httpuv::stopServer(), error = function(e) NULL)
+    return(resp)
+  }
+
+  # ── 静态托管 web/ 页面（同源访问，免 file:// 与跨域问题） ──
+  WEB_DIR <- file.path(SCRIPT_DIR, "web")
+  safe <- gsub("^/+", "", path)
+  safe <- gsub("\\.\\.", "", safe)                 # 去掉 ..，防目录穿越
+  static_file <- if (safe == "" || safe == "index.html") {
+    file.path(WEB_DIR, "index.html")
+  } else {
+    file.path(WEB_DIR, safe)
+  }
+  if (file.exists(static_file) && !dir.exists(static_file)) {
+    ext <- tolower(sub(".*\\.", "", basename(static_file)))
+    ctype <- switch(ext,
+      html = "text/html; charset=utf-8",
+      css  = "text/css; charset=utf-8",
+      js   = "application/javascript; charset=utf-8",
+      json = "application/json; charset=utf-8",
+      "text/plain; charset=utf-8")
+    bytes <- readBin(static_file, what = "raw", n = file.info(static_file)$size)
+    return(list(status = 200L,
+                headers = list("Content-Type" = ctype,
+                               "Access-Control-Allow-Origin" = "*",
+                               "Cache-Control" = "no-store"),
+                body = bytes))
+  }
+
   # 取参数：GET 用查询串，POST 用 JSON body（两者都支持，POST 优先）
   params <- parse_qs(req$QUERY_STRING)
   if (method == "POST") {
@@ -283,7 +335,7 @@ route <- function(req) {
       if (is.list(body)) for (k in names(body)) params[[k]] <- body[[k]]
     }
   }
-  if (path %in% c("/", "/index", "/api")) {
+  if (path %in% c("/api", "/help")) {
     return(json_resp(list(
       service = "年代表年龄转换 API",
       说明     = "把各版本地质年代表中对应地层界线作为控制点，将历史年龄由源版本转换到目标版本",
@@ -313,11 +365,11 @@ route <- function(req) {
     )))
   }
   if (path == "/versions") {
-    return(json_resp(list(
-      count = length(CANDIDATES),
-      versions = lapply(seq_along(CANDIDATES), function(i)
-        list(index = i, name = CANDIDATES[i]))
-    )))
+    vers <- lapply(seq_along(CANDIDATES), function(i) {
+      col <- suppressWarnings(as.numeric(as.character(DF[[CANDIDATES[i]]])))
+      list(index = i, name = CANDIDATES[i], cover = sum(!is.na(col)))
+    })
+    return(json_resp(list(count = length(CANDIDATES), versions = vers)))
   }
   if (path == "/convert") {
     if (!(method %in% c("GET", "POST"))) {
@@ -345,5 +397,15 @@ if (HOST == "0.0.0.0") {
   cat("    本服务无身份验证，请勿在不可信网络中长期开启。\n")
 }
 cat(strrep("=", 66), "\n")
-cat("  按 Ctrl+C 停止\n\n")
+cat("  演示页随服务自动在默认浏览器打开；关闭浏览器标签页即自动停止并清理\n")
+cat("  也可按 Ctrl+C 手动停止\n\n")
+# 启动后自动打开默认浏览器到首页（0.0.0.0 时回退 127.0.0.1 以便本机打开）
+open_host <- if (HOST == "0.0.0.0") "127.0.0.1" else HOST
+launch_url <- paste0("http://", open_host, ":", PORT, "/")
+tryCatch({
+  browseURL(launch_url)
+  cat("  已在默认浏览器打开：", launch_url, "\n", sep = "")
+}, error = function(e) {
+  cat("  自动打开失败，请手动访问：", launch_url, "\n", sep = "")
+})
 httpuv::runServer(HOST, PORT, app)
