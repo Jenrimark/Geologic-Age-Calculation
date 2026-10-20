@@ -3,30 +3,95 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>不同版本地质年代自动对齐模型</title>
+<title>地质年代表年龄转换 · 文件上传版</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- 顶栏 -->
 <header class="topbar">
-  <div class="brand"><span class="dot"></span><h1>不同版本地质年代自动对齐模型</h1></div>
+  <div class="brand"><span class="dot"></span><h1>不同版本地质年代自动对齐模型</h1>
+    <span class="tag">文件上传版</span></div>
   <div id="apiStatus" class="status unknown" title="R 后端连接状态">检测中…</div>
 </header>
 
-<!-- 成果数字条（通栏） -->
 <section class="stats">
-  <div class="stat"><div class="num" id="stVersions">87</div><div class="lab">年代表版本</div></div>
-  <div class="stat"><div class="num" id="stUnits">118</div><div class="lab">地层单元</div></div>
+  <div class="stat"><div class="num" id="stVersions">—</div><div class="lab">年代表版本</div></div>
+  <div class="stat"><div class="num" id="stUnits">—</div><div class="lab">地层单元</div></div>
   <div class="stat"><div class="num">5</div><div class="lab">级层级 · 宇/界/系/统/阶</div></div>
   <div class="stat"><div class="num">1917–2026</div><div class="lab">覆盖年份跨度</div></div>
   <div class="stat"><div class="num">1 步</div><div class="lab">源版本直达目标版本 · 至多一次插值</div></div>
 </section>
 
-<!-- 主体三栏，单屏不翻页 -->
-<main class="board">
+<div class="tabs">
+  <button class="tab active" data-mode="file">上传 Excel 批量转换</button>
+  <button class="tab" data-mode="manual">手动输入年龄</button>
+</div>
 
-  <!-- 左栏：选择与输入 -->
+<!-- ============ 模式一：上传文件 ============ -->
+<main class="board" id="modeFile">
+
+  <section class="panel">
+    <h2 class="panel-title"><span class="step">1</span>上传年代表文件</h2>
+
+    <div id="dropZone" class="dropzone">
+      <div class="dz-icon">⬆</div>
+      <div class="dz-main">把 Excel 文件拖到这里，或点击选择</div>
+      <div class="dz-sub">支持 .xlsx / .xls　·　最大约 40 MB　·　文件只在本机处理</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+    </div>
+
+    <div id="fileInfo" class="fileinfo hidden"></div>
+
+    <div class="field hidden" id="sheetField">
+      <label class="vlabel">工作表</label>
+      <select id="sheetSel"></select>
+    </div>
+
+    <div class="field hidden" id="colField">
+      <label class="vlabel">年龄所在列</label>
+      <select id="colSel"></select>
+      <div class="vmeta" id="colMeta"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title"><span class="step">2</span>选择转换方向</h2>
+
+    <div class="field">
+      <label class="vlabel">源版本（你文件里年龄所属的版本）</label>
+      <select id="srcSel2"></select>
+      <div class="vmeta" id="srcMeta2"></div>
+    </div>
+
+    <button id="swapBtn2" class="swap" title="交换源与目标">⇄</button>
+
+    <div class="field">
+      <label class="vlabel">目标版本（转换到哪个版本）</label>
+      <select id="dstSel2"></select>
+      <div class="vmeta" id="dstMeta2"></div>
+    </div>
+
+    <button id="goFileBtn" class="primary big" disabled>开始转换</button>
+    <p class="hint">精确匹配优先；未命中取上下相邻控制点分段线性插值；超出控制点范围不外推、留空。</p>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title"><span class="step">3</span>结果与下载</h2>
+    <div id="fileSummary" class="summary">转换完成后在此显示统计与预览。</div>
+    <div class="tablewrap">
+      <table class="result-table">
+        <thead><tr><th>行号</th><th>输入 Ma</th><th>输出 Ma</th><th>方式</th><th>所属地层单元</th></tr></thead>
+        <tbody id="fileResultBody"></tbody>
+      </table>
+    </div>
+    <a id="dlBtn" class="dlbtn hidden" download>⬇ 下载转换结果</a>
+  </section>
+
+</main>
+
+<!-- ============ 模式二：手动输入 ============ -->
+<main class="board hidden" id="modeManual">
+
   <section class="panel control">
     <h2 class="panel-title"><span class="step">1</span>选择版本并输入年龄</h2>
 
@@ -45,16 +110,13 @@
     </div>
 
     <div class="field">
-      <label class="vlabel">输入年龄（Ma，多个用逗号分隔）</label>
-      <div class="input-row">
-        <input type="text" id="ageInput" placeholder="如 2.59, 2.2" />
-        <button id="goBtn" class="primary">转换</button>
-      </div>
+      <label class="vlabel">输入年龄（Ma）</label>
+      <textarea id="ageInput" rows="5" placeholder="如 2.59, 2.2&#10;&#10;也可以直接从 Excel 复制一整列粘贴进来，逗号、空格、换行都能识别"></textarea>
+      <button id="goBtn" class="primary">转换</button>
     </div>
     <p class="hint">精确匹配优先；未命中取上下相邻控制点分段线性插值；超出控制点范围不外推。</p>
   </section>
 
-  <!-- 中栏：结果与算法 -->
   <section class="panel result">
     <h2 class="panel-title"><span class="step">2</span>转换结果</h2>
 
@@ -65,10 +127,12 @@
       <span class="direct-note" id="flowMethod">一步直达 · 至多一次插值</span>
     </div>
 
-    <table class="result-table">
-      <thead><tr><th>输入 Ma</th><th>输出 Ma</th><th>方式</th><th>所属地层单元</th></tr></thead>
-      <tbody id="resultBody"></tbody>
-    </table>
+    <div class="tablewrap">
+      <table class="result-table">
+        <thead><tr><th>输入 Ma</th><th>输出 Ma</th><th>方式</th><th>所属地层单元</th></tr></thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+    </div>
 
     <div class="axis-box" id="axisBox">
       <div class="axis-title">插值过程（仅插值时显示）</div>
@@ -76,10 +140,9 @@
     </div>
   </section>
 
-  <!-- 右栏：数据可视化 -->
   <section class="panel chart">
-    <h2 class="panel-title"><span class="step">3</span>87 版本覆盖度演进</h2>
-    <p class="chart-sub">按版本年代顺序（1917→2026），柱高 = 该版本划分的地层单元数 / 118</p>
+    <h2 class="panel-title"><span class="step">3</span>版本覆盖度演进</h2>
+    <p class="chart-sub">按版本年代顺序，柱高 = 该版本划分的地层单元数 / 总数</p>
     <svg id="coverSvg" viewBox="0 0 360 300" width="100%"></svg>
     <div class="legend">
       <span><i class="sw full"></i>覆盖 ≥90 单元</span>
@@ -90,7 +153,10 @@
 
 </main>
 
-<footer class="foot">转换由 R 服务完成（精确匹配 + 分段线性插值，只读不写文件）；关闭浏览器标签页即自动停止服务。</footer>
+<footer class="foot">
+  转换由 R 服务完成（精确匹配 + 分段线性插值）。上传的文件只写入本机临时目录、用完即删，
+  结果以下载形式返回，<b>不会覆盖你的原文件</b>。关闭本标签页约 90 秒后服务自动退出。
+</footer>
 
 <script src="app.js"></script>
 </body>
